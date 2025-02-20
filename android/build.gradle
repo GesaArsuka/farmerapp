@@ -1,0 +1,38 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // Android Gradle plugin (use the latest stable version):
+        classpath 'com.android.tools.build:gradle:8.1.2'
+
+        // Kotlin Gradle plugin (version should match your Kotlin setup):
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.0"
+
+        // NOTE: Do not place your application dependencies here;
+        // They belong in the individual module build.gradle files (i.e., android/app/build.gradle).
+    }
+}
+
+// This replaces project-wide Gradle settings used by older Flutter projects:
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+// Where the build folder is located
+rootProject.buildDir = "../build"
+
+// Configure each subproject's build directory
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+    project.evaluationDependsOn(":app")
+}
+
+// Clean task that deletes the entire build folder
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}

@@ -1,0 +1,32 @@
+name: farmer_app
+description: A farmer's recommendation app.
+
+# Add this environment section:
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  # If you want to be more precise or your IDE suggests '^3.6.0', use that.
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.5
+
+  # For making HTTP requests
+  http: ^0.13.6
+  http_parser: ^4.0.0
+
+  flutter_sound: ^9.2.13
+  path_provider: ^2.0.14
+  permission_handler: ^10.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+# Fonts, assets, etc. can be added here as needed
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/farmer_icon.jpg
+
+
