@@ -1,3 +1,4 @@
+import 'package:farmer_app/screens/archived_conversations_screen.dart';
 import 'package:flutter/material.dart';
 
 // Screens
@@ -29,7 +30,8 @@ class FarmerApp extends StatelessWidget {
         '/': (context) => const IntroductionScreen(),
         '/mainFeatures': (context) => const MainFeaturesScreen(),
         '/promptInput': (context) => const PromptInputScreen(),
-        // If needed, you can define more named routes here
+        '/archivedConversations' : (context) => const ArchivedConversationsScreen(),
+        // potential new routes to be added here //
       },
     );
   }

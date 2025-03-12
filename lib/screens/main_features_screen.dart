@@ -16,8 +16,8 @@ class _MainFeaturesScreenState extends State<MainFeaturesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Explore"),
-        backgroundColor: Colors.black,
+        title: const Text("Tutorial"),
+        backgroundColor: Colors.white,
       ),
 
       bottomNavigationBar: CustomBottomNavBar(
@@ -34,15 +34,8 @@ class _MainFeaturesScreenState extends State<MainFeaturesScreen> {
             // Go to Prompt screen
             Navigator.pushNamed(context, '/promptInput');
           } else if (index == 2) {
-            // Go to Answer screen
-            Navigator.pushNamed(
-              context,
-              '/answerDisplay',
-              arguments: {
-                'plantName': 'Placeholder',
-                'complaint': 'Placeholder complaint',
-              },
-            );
+            // Go to archived convos
+            Navigator.pushNamed(context, '/archivedConversations');
           }
         },
       ),
