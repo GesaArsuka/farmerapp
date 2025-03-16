@@ -16,6 +16,7 @@ dependencies:
   permission_handler: ^10.2.0
   intl: ^0.17.0
   image_picker: ^0.8.6
+  tutorial_coach_mark: ^1.2.13
 
 dev_dependencies:
   flutter_test:

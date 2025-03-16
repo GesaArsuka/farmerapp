@@ -1,5 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_sound/flutter_sound.dart';
 import '../services/api_services.dart';
 
 class AnswerDisplayScreen extends StatefulWidget {
@@ -26,10 +29,16 @@ class _AnswerDisplayScreenState extends State<AnswerDisplayScreen> {
   bool _isLoading = false;
   String? _conversationId;
 
+  // Recorder for follow-up voice input.
+  FlutterSoundRecorder? _recorder;
+  bool _isRecorderInitialized = false;
+  bool _isRecordingMic = false;
+
   @override
   void initState() {
     super.initState();
     _conversationId = widget.conversationId;
+    _initRecorder();
 
     if (_conversationId != null) {
       _loadConversationHistory();
@@ -47,43 +56,55 @@ class _AnswerDisplayScreenState extends State<AnswerDisplayScreen> {
     }
   }
 
-  void _loadConversationHistory() async {
-  try {
-    final messages = await ApiServices.getConversationHistory(_conversationId!);
-    // Process the messages: skip system messages and extract text for others.
-    List<Map<String, String>> chatBubbles = [];
-    for (var m in messages) {
-      if (m["role"] == "system") continue; // Skip system prompt
-      final List<dynamic> contents = m["content"];
-      // Join all text parts from the content list (if there are multiple)
-      final messageText = contents
-          .map<String>((contentBlock) => contentBlock["text"].toString())
-          .join("\n");
-      chatBubbles.add({
-        "role": m["role"].toString(),
-        "content": messageText,
-      });
-    }
+  Future<void> _initRecorder() async {
+    final status = await Permission.microphone.request();
+    if (status != PermissionStatus.granted) return;
+    _recorder = FlutterSoundRecorder();
+    await _recorder!.openRecorder();
     setState(() {
-      conversationHistory = chatBubbles;
+      _isRecorderInitialized = true;
     });
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Error loading conversation: $e")),
-    );
   }
-}
 
+  @override
+  void dispose() {
+    _recorder?.closeRecorder();
+    _recorder = null;
+    followUpController.dispose();
+    super.dispose();
+  }
 
+  void _loadConversationHistory() async {
+    try {
+      final messages = await ApiServices.getConversationHistory(_conversationId!);
+      // Process messages: skip system messages and join text parts.
+      List<Map<String, String>> chatBubbles = [];
+      for (var m in messages) {
+        if (m["role"] == "system") continue;
+        final List<dynamic> contents = m["content"];
+        final messageText = contents
+            .map<String>((contentBlock) => contentBlock["text"].toString())
+            .join("\n");
+        chatBubbles.add({
+          "role": m["role"].toString(),
+          "content": messageText,
+        });
+      }
+      setState(() {
+        conversationHistory = chatBubbles;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error loading conversation: $e")),
+      );
+    }
+  }
 
   String _extractTextOnly(dynamic contentField) {
     if (contentField == null) return "";
-
-    // If it's a list of blocks
     if (contentField is List) {
       return _extractFromBlocks(contentField);
     }
-    // If it's a string, try to decode or fallback
     if (contentField is String) {
       try {
         final decoded = jsonDecode(contentField);
@@ -93,11 +114,9 @@ class _AnswerDisplayScreenState extends State<AnswerDisplayScreen> {
           return contentField;
         }
       } catch (_) {
-        // Not JSON => just return as is
         return contentField;
       }
     }
-    // If it's something else (Map?), fallback
     return contentField.toString();
   }
 
@@ -117,7 +136,6 @@ class _AnswerDisplayScreenState extends State<AnswerDisplayScreen> {
     if (followUpText.isEmpty) return;
 
     setState(() => _isLoading = true);
-
     conversationHistory.add({"role": "user", "content": followUpText});
 
     try {
@@ -157,12 +175,40 @@ class _AnswerDisplayScreenState extends State<AnswerDisplayScreen> {
     }
   }
 
+  // New: Toggle recording for follow-up message using whisper for transcription.
+  Future<void> _toggleRecordingMic() async {
+    if (!_isRecorderInitialized) return;
+    if (!_isRecordingMic) {
+      await _recorder!.startRecorder(toFile: "followup_message.aac");
+      setState(() {
+        _isRecordingMic = true;
+      });
+    } else {
+      final path = await _recorder!.stopRecorder();
+      setState(() {
+        _isRecordingMic = false;
+      });
+      if (path != null) {
+        final file = File(path);
+        try {
+          // This call uses your backend's Whisper-based transcription.
+          final transcription = await ApiServices.transcribeAudio(file);
+          followUpController.text = transcription;
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Transcription error: $e")),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Verdant"),
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.archive),
@@ -172,7 +218,7 @@ class _AnswerDisplayScreenState extends State<AnswerDisplayScreen> {
       ),
       body: Column(
         children: [
-          // Conversation display
+          // Conversation display.
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
@@ -211,6 +257,11 @@ class _AnswerDisplayScreenState extends State<AnswerDisplayScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
+          ),
+          // New mic record button for follow-up voice input.
+          IconButton(
+            icon: Icon(_isRecordingMic ? Icons.mic : Icons.mic_none),
+            onPressed: _isRecorderInitialized ? _toggleRecordingMic : null,
           ),
           IconButton(
             icon: const Icon(Icons.send),

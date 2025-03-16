@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import '../services/api_services.dart';
 import 'answer_display_screen.dart';
 
 class ArchivedConversationsScreen extends StatefulWidget {
-  const ArchivedConversationsScreen({Key? key}) : super(key: key);
+  final bool showTutorial;
+  const ArchivedConversationsScreen({Key? key, this.showTutorial = false}) : super(key: key);
 
   @override
   _ArchivedConversationsScreenState createState() =>
       _ArchivedConversationsScreenState();
 }
 
-class _ArchivedConversationsScreenState
-    extends State<ArchivedConversationsScreen> {
+class _ArchivedConversationsScreenState extends State<ArchivedConversationsScreen> {
   bool _isLoading = true;
   List<dynamic> _conversations = [];
   String? _error;
@@ -27,10 +28,67 @@ class _ArchivedConversationsScreenState
     Colors.teal.shade100,
   ];
 
+  // Global key for the first conversation card to highlight.
+  final GlobalKey _firstCardKey = GlobalKey();
+
+  TutorialCoachMark? tutorialCoachMark;
+  List<TargetFocus> targets = [];
+
   @override
   void initState() {
     super.initState();
     _fetchConversations();
+
+    if (widget.showTutorial) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _initTargets();
+        _showTutorialCoachMark();
+      });
+    }
+  }
+
+  void _initTargets() {
+    targets.clear();
+    if (_conversations.isNotEmpty) {
+      targets.add(
+        TargetFocus(
+          identify: "FirstCard",
+          keyTarget: _firstCardKey,
+          contents: [
+            TargetContent(
+              align: ContentAlign.bottom,
+              child: Container(
+                child: const Text(
+                  "Kartu ini memiliki informasi singkat dari percakapan yang telah disimpan, seperti tanggal dan preview isi percakapan. Tekan untuk mengakses percakapannya kembali atau gunakan tombol hapus untuk menghapus percakapan.",
+                  style: TextStyle(color: Colors.black, fontSize: 18),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  void _showTutorialCoachMark() {
+    if (targets.isNotEmpty) {
+      tutorialCoachMark = TutorialCoachMark(
+         // Pass context as a positional argument.
+        targets: targets,
+        colorShadow: Colors.black,
+        textSkip: "SKIP",
+        paddingFocus: 10,
+        opacityShadow: 0.8,
+        onFinish: () {
+          print("Archived Conversation Tutorial finished");
+          return true;
+        },
+        onSkip: () {
+          print("Archived Conversation Tutorial skipped");
+          return true;
+        },
+      )..show(context:context);
+    }
   }
 
   Future<void> _fetchConversations() async {
@@ -40,6 +98,12 @@ class _ArchivedConversationsScreenState
         _conversations = convs;
         _isLoading = false;
       });
+      if (widget.showTutorial) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _initTargets();
+          _showTutorialCoachMark();
+        });
+      }
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -62,7 +126,7 @@ class _ArchivedConversationsScreenState
     }
   }
 
-  // Helper function: Converts a JSON list of text blocks to a single string.
+  // Helper: Joins text blocks from JSON content.
   String extractText(dynamic content) {
     if (content is List) {
       return content.map((item) => item["text"].toString()).join("\n");
@@ -79,19 +143,15 @@ class _ArchivedConversationsScreenState
       String complaint = "";
 
       if (messages.isNotEmpty) {
-        final firstUser = messages.firstWhere((msg) => msg["role"] == "user",
-            orElse: () => null);
+        final firstUser = messages.firstWhere((msg) => msg["role"] == "user", orElse: () => null);
         if (firstUser != null) {
           final text = extractText(firstUser["content"]);
-          // Attempt to extract plant name and complaint using a regex.
-          final regex =
-              RegExp(r"Plant Name:\s*(.+)\nComplaint:\s*(.+)", dotAll: true);
+          final regex = RegExp(r"Plant Name:\s*(.+)\nComplaint:\s*(.+)", dotAll: true);
           final match = regex.firstMatch(text);
           if (match != null) {
             plantName = match.group(1)?.trim() ?? "";
             complaint = match.group(2)?.trim() ?? "";
           } else {
-            // Fallback: assign entire text to both fields.
             plantName = text;
             complaint = text;
           }
@@ -99,7 +159,6 @@ class _ArchivedConversationsScreenState
       }
 
       String? lastAssistant;
-      // Get the last assistant message.
       for (var msg in messages.reversed) {
         if (msg["role"] == "assistant") {
           lastAssistant = extractText(msg["content"]);
@@ -138,7 +197,7 @@ class _ArchivedConversationsScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Archived Conversations"),
+        title: const Text("Arsip Percakapan"),
         backgroundColor: Colors.white,
       ),
       body: _isLoading
@@ -151,9 +210,9 @@ class _ArchivedConversationsScreenState
                     final conv = _conversations[index];
                     final cardColor = cardColors[index % cardColors.length];
                     return Card(
+                      key: index == 0 ? _firstCardKey : null,
                       color: cardColor,
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
+                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       child: ListTile(
                         title: Text("Conversation #${index + 1}"),
                         subtitle: Text(
@@ -161,11 +220,9 @@ class _ArchivedConversationsScreenState
                         ),
                         trailing: IconButton(
                           icon: const Icon(Icons.delete),
-                          onPressed: () =>
-                              _deleteConversation(conv["conversation_id"]),
+                          onPressed: () => _deleteConversation(conv["conversation_id"]),
                         ),
-                        onTap: () =>
-                            _openConversation(conv["conversation_id"]),
+                        onTap: () => _openConversation(conv["conversation_id"]),
                       ),
                     );
                   },

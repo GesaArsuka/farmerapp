@@ -5,13 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 import '../services/api_services.dart';
 import '../screens/answer_display_screen.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 
 class PromptInputScreen extends StatefulWidget {
-  const PromptInputScreen({Key? key}) : super(key: key);
+  final bool showTutorial;
+  const PromptInputScreen({Key? key, this.showTutorial = false}) : super(key: key);
 
   @override
   State<PromptInputScreen> createState() => _PromptInputScreenState();
@@ -30,11 +32,137 @@ class _PromptInputScreenState extends State<PromptInputScreen> {
 
   File? _selectedImageFile;
 
+  // Global keys for tutorial targets.
+  final GlobalKey _plantNameFieldKey = GlobalKey();
+  final GlobalKey _plantMicKey = GlobalKey();
+  final GlobalKey _complaintFieldKey = GlobalKey();
+  final GlobalKey _complaintMicKey = GlobalKey();
+  final GlobalKey _photoPickerKey = GlobalKey();
+
+  TutorialCoachMark? tutorialCoachMark;
+  List<TargetFocus> targets = [];
+
   @override
   void initState() {
     super.initState();
     _recorder = FlutterSoundRecorder();
     _initRecorder();
+
+    // If showTutorial is true (navigated via cue card), display the overlay.
+    if (widget.showTutorial) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _initTargets();
+        _showTutorialCoachMark();
+      });
+    }
+  }
+
+  void _initTargets() {
+    targets.clear();
+    targets.add(
+      TargetFocus(
+        identify: "PlantNameField",
+        keyTarget: _plantNameFieldKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.bottom,
+            child: Container(
+              child: const Text(
+                "Tuliskan nama tanaman di sini.",
+                style: TextStyle(color: Colors.black, fontSize: 24),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    targets.add(
+      TargetFocus(
+        identify: "PlantMic",
+        keyTarget: _plantMicKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: Container(
+              child: const Text(
+                "Tekan tombol ini untuk menggunakan fitur rekam suara, katakan nama tanaman.",
+                style: TextStyle(color: Colors.black, fontSize: 24),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    targets.add(
+      TargetFocus(
+        identify: "ComplaintField",
+        keyTarget: _complaintFieldKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: Container(
+              child: const Text(
+                "Masukan keluhan tentang tanaman anda di sini.",
+                style: TextStyle(color: Colors.black, fontSize: 24),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    targets.add(
+      TargetFocus(
+        identify: "ComplaintMic",
+        keyTarget: _complaintMicKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: Container(
+              child: const Text(
+                "Tekan tombol ini untuk menggunakan fitur rekam suara keluhan tanaman anda.",
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    targets.add(
+      TargetFocus(
+        identify: "PhotoPicker",
+        keyTarget: _photoPickerKey,
+        contents: [
+          TargetContent(
+            align: ContentAlign.top,
+            child: Container(
+              child: const Text(
+                "Fitur ini untuk memberikan saya konteks tambahan dari gambar yang diberikan.",
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTutorialCoachMark() {
+    tutorialCoachMark = TutorialCoachMark(
+      // Pass context as a positional argument.
+      targets: targets,
+      colorShadow: Colors.black,
+      textSkip: "SKIP",
+      paddingFocus: 10,
+      opacityShadow: 0.8,
+      onFinish: () {
+        print("Prompt Input Tutorial finished");
+        return true;
+      },
+      onSkip: () {
+        print("Prompt Input Tutorial skipped");
+        return true;
+      },
+    )..show(context:context);
   }
 
   Future<void> _initRecorder() async {
@@ -100,7 +228,7 @@ class _PromptInputScreenState extends State<PromptInputScreen> {
     }
   }
 
-  /// Pick or capture an image
+  /// Pick or capture an image.
   Future<void> _pickImage({bool fromCamera = false}) async {
     final ImagePicker picker = ImagePicker();
     final XFile? pickedFile = await picker.pickImage(
@@ -130,12 +258,10 @@ class _PromptInputScreenState extends State<PromptInputScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Use the new multipart method in ApiServices.
       final result = await ApiServices.sendChatPromptMultipart(
         plantName: plantName,
         complaint: complaint,
         imageFile: _selectedImageFile,
-        // conversationId: "some-existing-id" // if continuing a conversation
       );
 
       final gptResponse = result["answer"];
@@ -161,14 +287,20 @@ class _PromptInputScreenState extends State<PromptInputScreen> {
     }
   }
 
-  bool get _isRecordingPlant => _activeMic == 'plant' && _recorder!.isRecording;
-  bool get _isRecordingComplaint => _activeMic == 'complaint' && _recorder!.isRecording;
+  // Rewritten getters with explicit return.
+  bool get _isRecordingPlant {
+    return _activeMic == 'plant' && (_recorder != null ? _recorder!.isRecording : false);
+  }
+
+  bool get _isRecordingComplaint {
+    return _activeMic == 'complaint' && (_recorder != null ? _recorder!.isRecording : false);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Pertanyaan"),
+        title: const Text("Konsultasi"),
         backgroundColor: Colors.white,
       ),
       body: Stack(
@@ -179,18 +311,22 @@ class _PromptInputScreenState extends State<PromptInputScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Plant name row
+                  // Plant name row with key.
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Expanded(
-                        child: _buildTextField(
-                          label: "Nama Tanaman",
-                          controller: _plantNameController,
+                        child: Container(
+                          key: _plantNameFieldKey,
+                          child: _buildTextField(
+                            label: "Nama Tanaman",
+                            controller: _plantNameController,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       IconButton(
+                        key: _plantMicKey,
                         icon: Icon(
                           _isRecordingPlant ? Icons.mic : Icons.mic_none,
                           color: _isRecordingPlant ? Colors.red : Colors.grey,
@@ -202,20 +338,23 @@ class _PromptInputScreenState extends State<PromptInputScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
-
-                  // Complaint row
+                  // Complaint row with key.
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Expanded(
-                        child: _buildTextField(
-                          label: "Keluhan",
-                          controller: _complaintController,
-                          maxLines: 5,
+                        child: Container(
+                          key: _complaintFieldKey,
+                          child: _buildTextField(
+                            label: "Keluhan",
+                            controller: _complaintController,
+                            maxLines: 5,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       IconButton(
+                        key: _complaintMicKey,
                         icon: Icon(
                           _isRecordingComplaint ? Icons.mic : Icons.mic_none,
                           color: _isRecordingComplaint ? Colors.red : Colors.grey,
@@ -227,9 +366,9 @@ class _PromptInputScreenState extends State<PromptInputScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
-
-                  // Image preview
+                  // Image preview and photo picker with key.
                   Container(
+                    key: _photoPickerKey,
                     width: double.infinity,
                     height: 200,
                     decoration: BoxDecoration(
@@ -289,7 +428,6 @@ class _PromptInputScreenState extends State<PromptInputScreen> {
                           ),
                   ),
                   const SizedBox(height: 20),
-
                   ElevatedButton(
                     onPressed: _isLoading ? null : _handleSubmit,
                     child: const Text("Kirim"),
@@ -334,10 +472,7 @@ class _PromptInputScreenState extends State<PromptInputScreen> {
         decoration: InputDecoration(
           labelText: label,
           labelStyle: const TextStyle(color: Colors.black),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16.0,
-            vertical: 12.0,
-          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
           border: InputBorder.none,
         ),
       ),
