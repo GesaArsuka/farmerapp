@@ -42,8 +42,8 @@ class _MainFeaturesScreenState extends State<MainFeaturesScreen> {
         children: [
           // Cue Card 1 – Plant Consultation Tutorial.
           _buildFeatureCard(
-            title: "Plant Consultation",
-            description: "Learn how to use the prompt input (mic, text & photo).",
+            title: "Konsultasi Tanaman",
+            description: "Pelajari bagaimana cara menggunakan fitur konsultasi saya (Mic, text, dan gambar) di sini",
             color: Colors.greenAccent.shade100,
             onTap: () {
               // Navigate to PromptInputScreen with tutorial mode enabled.
@@ -58,8 +58,8 @@ class _MainFeaturesScreenState extends State<MainFeaturesScreen> {
           const SizedBox(height: 16),
           // Cue Card 2 – Save Current Conversation Tutorial.
           _buildFeatureCard(
-            title: "Save Conversation",
-            description: "Learn how to archive your current conversation.",
+            title: "Simpan Percakapan",
+            description: "Pelajari bagaimana cara untuk menyimpan percakapan anda.",
             color: Colors.purpleAccent.shade100,
             onTap: () {
               // Show a modal dialog with a preview image and instructions.
@@ -82,7 +82,7 @@ class _MainFeaturesScreenState extends State<MainFeaturesScreen> {
                           Image.asset("assets/answer_display_preview.png"),
                           const SizedBox(height: 16),
                           const Text(
-                            "Press the archive button to save the current conversation for later access.",
+                            "Tekan tombol arsip untuk menyimpan percakapan sehingga dapat diakses kembali nanti.",
                             textAlign: TextAlign.center,
                             style: TextStyle(fontSize: 16),
                           ),
@@ -104,8 +104,8 @@ class _MainFeaturesScreenState extends State<MainFeaturesScreen> {
           const SizedBox(height: 16),
           // Cue Card 3 – Access Archived Conversations Tutorial.
           _buildFeatureCard(
-            title: "Access Archived Conversations",
-            description: "Learn how to view and interact with archived chats.",
+            title: "Akses Kembali Arsip Percakapan",
+            description: "Pelajari cara melihat dan berinteraksi dengan percakapan yang tersimpan.",
             color: Colors.blueAccent.shade100,
             onTap: () {
               // Navigate to ArchivedConversationsScreen with tutorial mode enabled.
