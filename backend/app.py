@@ -4,8 +4,8 @@ import uuid
 import base64
 import tempfile
 from datetime import datetime
-import whisper
 import openai
+import whisper
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename

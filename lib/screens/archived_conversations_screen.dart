@@ -216,7 +216,7 @@ class _ArchivedConversationsScreenState extends State<ArchivedConversationsScree
                       child: ListTile(
                         title: Text("Conversation #${index + 1}"),
                         subtitle: Text(
-                          "Date: ${formatDate(conv["created_at"])}\nSummary: ${conv["summary"]}",
+                          "Tanggal : ${formatDate(conv["created_at"])}\nSummary: ${conv["summary"]}",
                         ),
                         trailing: IconButton(
                           icon: const Icon(Icons.delete),
