@@ -67,9 +67,10 @@ class _PromptInputScreenState extends State<PromptInputScreen> {
           TargetContent(
             align: ContentAlign.bottom,
             child: Container(
+              padding: const EdgeInsets.only(top: 160.0),
               child: const Text(
                 "Tuliskan nama tanaman di sini.",
-                style: TextStyle(color: Colors.black, fontSize: 24),
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 20),
               ),
             ),
           ),
@@ -82,11 +83,12 @@ class _PromptInputScreenState extends State<PromptInputScreen> {
         keyTarget: _plantMicKey,
         contents: [
           TargetContent(
-            align: ContentAlign.top,
+            align: ContentAlign.bottom,
             child: Container(
+              padding: const EdgeInsets.only(top: 60.0, bottom: 20),
               child: const Text(
                 "Tekan tombol ini untuk menggunakan fitur rekam suara, katakan nama tanaman.",
-                style: TextStyle(color: Colors.black, fontSize: 24),
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 20),
               ),
             ),
           ),
@@ -99,11 +101,12 @@ class _PromptInputScreenState extends State<PromptInputScreen> {
         keyTarget: _complaintFieldKey,
         contents: [
           TargetContent(
-            align: ContentAlign.top,
+            align: ContentAlign.bottom,
             child: Container(
+              padding: const EdgeInsets.only(top: 120.0),
               child: const Text(
                 "Masukan keluhan tentang tanaman anda di sini.",
-                style: TextStyle(color: Colors.black, fontSize: 24),
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 24),
               ),
             ),
           ),
@@ -120,7 +123,7 @@ class _PromptInputScreenState extends State<PromptInputScreen> {
             child: Container(
               child: const Text(
                 "Tekan tombol ini untuk menggunakan fitur rekam suara keluhan tanaman anda.",
-                style: TextStyle(color: Colors.white, fontSize: 20),
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 20),
               ),
             ),
           ),
@@ -133,11 +136,12 @@ class _PromptInputScreenState extends State<PromptInputScreen> {
         keyTarget: _photoPickerKey,
         contents: [
           TargetContent(
-            align: ContentAlign.top,
+            align: ContentAlign.bottom,
             child: Container(
+              padding: const EdgeInsets.only(top: 120.0),
               child: const Text(
                 "Fitur ini untuk memberikan saya konteks tambahan dari gambar yang diberikan.",
-                style: TextStyle(color: Colors.white, fontSize: 20),
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 20),
               ),
             ),
           ),
