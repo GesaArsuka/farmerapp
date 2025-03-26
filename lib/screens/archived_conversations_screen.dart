@@ -57,10 +57,11 @@ class _ArchivedConversationsScreenState extends State<ArchivedConversationsScree
           contents: [
             TargetContent(
               align: ContentAlign.bottom,
+              padding: const EdgeInsets.only(top: 220.0),
               child: Container(
                 child: const Text(
                   "Kartu ini memiliki informasi singkat dari percakapan yang telah disimpan, seperti tanggal dan preview isi percakapan. Tekan untuk mengakses percakapannya kembali atau gunakan tombol hapus untuk menghapus percakapan.",
-                  style: TextStyle(color: Colors.black, fontSize: 18),
+                  style: TextStyle(color: Colors.white, fontSize: 18),
                 ),
               ),
             ),
