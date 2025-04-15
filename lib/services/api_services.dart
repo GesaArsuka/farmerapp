@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class ApiServices {
-  static const String baseUrl = "http://10.0.2.2:5000";
+  static const String baseUrl = "https://nh73cp8f-5000.asse.devtunnels.ms/";
 
   /// NEW: Send text + optional image via multipart/form-data to /chat_with_image.
   static Future<Map<String, dynamic>> sendChatPromptMultipart({
@@ -73,32 +73,37 @@ class ApiServices {
   }
 
   static Future<Map<String, dynamic>> sendChatPromptWithConversation(
-      List<Map<String, String>> messages, {String? conversationId}) async {
-    final url = Uri.parse("$baseUrl/chat");
-    final Map<String, dynamic> requestBody = {"messages": messages};
+    List<Map<String, String>> messages, {String? conversationId}) async {
+  // Use the followup endpoint if conversationId exists, otherwise use /chat for new conversations.
+  final String endpoint = (conversationId == null) ? "chat" : "chat_followup";
+  final url = Uri.parse("$baseUrl/$endpoint");
 
-    if (conversationId != null) {
-      requestBody["conversation_id"] = conversationId;
-    }
+  final Map<String, dynamic> requestBody = {"messages": messages};
 
-    final response = await http.post(
-      url,
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode(requestBody),
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return {
-        "answer": data["answer"] ?? "No answer returned",
-        "conversation_id": data["conversation_id"]
-      };
-    } else {
-      throw Exception(
-        "Failed with status ${response.statusCode}: ${response.reasonPhrase}"
-      );
-    }
+  if (conversationId != null) {
+    requestBody["conversation_id"] = conversationId;
   }
+
+  final response = await http.post(
+    url,
+    headers: {"Content-Type": "application/json"},
+    body: jsonEncode(requestBody),
+  );
+
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    return {
+      "answer": data["answer"] ?? "No answer returned",
+      "conversation_id": data["conversation_id"]
+    };
+  } else {
+    throw Exception(
+      "Failed with status ${response.statusCode}: ${response.reasonPhrase}"
+    );
+  }
+}
+
+
 
   static Future<Map<String, dynamic>> sendChatPrompt(String userPrompt) async {
     List<Map<String, String>> messages = [

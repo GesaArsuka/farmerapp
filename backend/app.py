@@ -13,6 +13,7 @@ from werkzeug.utils import secure_filename
 ########################################
 # Flask Config
 ########################################
+
 app = Flask(__name__)
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -186,22 +187,79 @@ def chat():
 
 def _build_gpt_messages(conv_id):
     """
-    Loads all messages from DB in chronological order, returns an array of:
-    {
-      "role": "user"/"assistant"/"system",
-      "content": [ { "type":"text","text":"..."}, ... ]
-    }
-    ignoring images since we don't store them in DB. 
+    Loads all messages from DB in chronological order, returning each message
+    with its content flattened into one plain text string.
     """
     msgs = Message.query.filter_by(conversation_id=conv_id).order_by(Message.timestamp).all()
     out = []
     for m in msgs:
-        content_blocks = json.loads(m.content)  # only text
+        # Parse the stored JSON list of blocks
+        content_blocks = json.loads(m.content)
+        # Flatten the blocks into one single string by joining them with newlines.
+        full_text = "\n".join(block.get("text", "") for block in content_blocks if block.get("type") == "text")
         out.append({
             "role": m.role,
-            "content": content_blocks
+            "content": full_text
         })
     return out
+
+
+@app.route("/chat_followup", methods=["POST"])
+def chat_followup():
+    try:
+        data = request.get_json()
+        conv_id = data.get("conversation_id")
+        new_msgs = data.get("messages", [])
+        if not conv_id or not new_msgs:
+            return jsonify({"error": "Missing conversation_id or messages"}), 400
+
+        conversation = Conversation.query.get(conv_id)
+        if not conversation:
+            return jsonify({"error": "Conversation not found"}), 404
+
+        # Save each new user message (store as flat text blocks)
+        for msg in new_msgs:
+            if msg.get("role") == "user" and "content" in msg:
+                content_block = [{"type": "text", "text": msg["content"]}]
+                user_msg = Message(
+                    conversation_id=conv_id,
+                    role="user",
+                    content=json.dumps(content_block)
+                )
+                db.session.add(user_msg)
+        db.session.commit()
+
+        # Rebuild the full conversation history as plain text messages
+        conversation_messages = _build_gpt_messages(conv_id)
+
+        # Debug: Print the conversation history being sent to GPT
+        print("Sending to GPT:", json.dumps(conversation_messages, indent=2))
+
+        # Call GPT with the complete conversation history including the system prompt
+        completion = openai.chat.completions.create(
+            model="gpt-4o-2024-11-20",  # adjust this model name if needed
+            store=True,
+            messages=conversation_messages
+        )
+        assistant_reply = completion.choices[0].message.content
+
+        # Save the assistant’s reply as a new message
+        assistant_blocks = [{"type": "text", "text": assistant_reply}]
+        assistant_msg = Message(
+            conversation_id=conv_id,
+            role="assistant",
+            content=json.dumps(assistant_blocks)
+        )
+        db.session.add(assistant_msg)
+        db.session.commit()
+
+        return jsonify({"answer": assistant_reply, "conversation_id": conv_id})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
 
 ########################################
 # Archiving, Deleting, etc.
